@@ -1,47 +1,125 @@
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
+    <div>
+        <div class="btn-group-vertical w-100 mt-2 mb-2 p-2">
+            <button v-for="btn in directions"
+                    class="btn btn-lg"
+                    :class="{'btn-primary': currentDirection == btn,
+                             'flash': illuminateTimeout && currentDirection == btn,
+                            'btn-secondary': currentDirection != btn
+                    }"
+                    @click="setDirection(btn)">
+                {{ btn }}
+            </button>
+        </div>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+        <button @click="clearDirection"
+                class="btn btn-sm btn-danger mx-auto d-block">
+            Clear Direction
+        </button>
     </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
 </template>
-
-<style scoped>
-header {
-  line-height: 1.5;
+<style>
+.btn-group-vertical button:nth-child(n+1) {
+    border-top: 3px solid #333;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+.flash {
+    background: red;
+    animation: blinkButton 1s infinite;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
+@keyframes blinkButton {
+    0% {
+        background: darkred;
+    }
 
-  .logo {
-    margin: 0 2rem 0 0;
-  }
+    50% {
+        background: red;
+    }
 
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
+    100% {
+        background: darkred;
+    }
 }
+
 </style>
+<script>
+import {
+    toRaw
+} from 'vue';
+
+import {
+    getDatabase, 
+    ref,
+    set, 
+    get,
+    child,
+    push,
+    remove,
+    onValue, 
+    onChildAdded, 
+    onChildChanged, 
+    onChildRemoved,
+    orderByKey,
+    query,
+    update
+} from "firebase/database";
+
+export default {
+
+    methods: {
+        setDirection(direction) {
+            const database = getDatabase();
+            set(ref(database, 'direction'), direction);            
+        },
+
+        clearDirection() {
+            const database = getDatabase();
+            remove(ref(database, 'direction'));    
+            
+            if(this.illuminateTimeout) {
+                clearTimeout(this.illuminateTimeout);
+                this.illuminateTimeout = null;
+            }
+        },
+
+
+        async build() {
+            const db = getDatabase();
+
+            onValue(ref(db, 'direction'), (snapshot) => {
+                this.currentDirection = snapshot.val();
+                
+                if(this.illuminateTimeout) {
+                    clearTimeout(this.illuminateTimeout);
+                }
+                this.illuminateTimeout = setTimeout(this.clearIlluminate, 10000);
+            });
+        },
+
+        clearIlluminate() {
+            this.illuminateTimeout = null;
+        }
+    },
+
+    data() {
+        return {
+            illuminateTimeout: null,
+            currentDirection: null,
+            directions: [
+                "Bring Julius Up NOW",
+                "Julius",
+                "Julius + Slides/Content",
+                "Julius + Guest",
+                "Guest",
+                "Guest + Slides/Content",
+                "Julius + Guest + Slides/Content",
+            ]
+        }
+    },
+
+    mounted() {
+        this.build();
+    }
+}
+</script>
