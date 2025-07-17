@@ -114,6 +114,7 @@ export default {
                 "Guest",
                 "Guest + Slides/Content",
                 "Julius + Guest + Slides/Content",
+                "Take guest off screen",
             ]
         }
     },
